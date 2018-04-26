@@ -184,7 +184,7 @@ private:
 				int round = rand() % PathSets[j].num;
 				int k = 0;
 				while (PathSets[j].Pathset[round][k]>0)k++;
-				float value = demand[j] / pow(k, 0.5);
+				float value = pow((float)demand[j],0.5)/k;
 				OoO.push_back(make_pair(value, make_pair(j, round)));
 			}
 			sort(OoO.begin(), OoO.end(), randcmp);

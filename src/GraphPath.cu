@@ -37,11 +37,11 @@ __global__ void bellmanHigh(Edge *edge, int *m, float *c, int*p, float*lambda, i
 	int tid = blockIdx.y;
 	int i = threadIdx.x + blockIdx.x*blockDim.x;
 	if (i >= stillS)return;
-	i = mask[i];
+	i= mask[i];
 	int head = edge[tid].head;
 	int tail = edge[tid].tail;
-	int biao = head*NODE + i;
-	float val = c[tail*NODE + i]+1 +lambda[tid];
+	int biao = i+NODE*head;
+	float val = c[tail*NODE+i]+1 +lambda[tid];
 	if (c[biao] >val){
 		*m = 1;
 		c[biao] = val;
@@ -55,12 +55,41 @@ __global__ void color(Edge *edge, int *m, float *c, int*p, float*lambda, int *ma
 	i = mask[i];
 	int head = edge[tid].head;
 	int tail = edge[tid].tail;
-	int biao = head*NODE + i;
-	float val = c[tail*NODE + i]+1+lambda[tid];
-	if (c[biao] == val){
+	int biao = i+head*NODE;
+	float val = c[tail*NODE+i]+1+lambda[tid];
+	if (c[biao]+0.1>val){
 		p[biao] = tid;
 	}
 }
+/*__global__ void bellmanHigh(Edge *edge, int *m, float *c, int*p, float*lambda, int*mask, int stillS)
+{
+        int i = blockIdx.y;
+        int tid = threadIdx.x + blockIdx.x*blockDim.x;
+        if (tid >= stillS)return;
+        i= mask[i];
+        int head = edge[tid].head;
+        int tail = edge[tid].tail;
+        int biao = i + head*NODE;
+        float val = c[i + NODE*tail]+1 +lambda[tid];
+        if (c[biao] >val){
+                *m = 1;
+                c[biao] = val;
+        }
+}
+__global__ void color(Edge *edge, int *m, float *c, int*p, float*lambda, int *mask, int stillS){
+
+        int i = blockIdx.y;
+        int tid = threadIdx.x + blockIdx.x*blockDim.x;
+        if (tid >= stillS)return;
+        i = mask[i];
+        int head = edge[tid].head;
+        int tail = edge[tid].tail;
+        int biao = head*NODE + i;
+        float val = c[tail*NODE + i]+1+lambda[tid];
+        if (c[biao]+0.1>val){
+                p[biao] = tid;
+        }
+}*/
 __global__ void ChangePameterC(int*p, float*d, int* st){
 	int tid = blockIdx.y;
 	int i = threadIdx.x + blockDim.x*blockIdx.x;
@@ -161,7 +190,9 @@ vector<pair<string,float> > GraphPath::bellmanFordCuda(vector<service>&ser,ostre
 	vector<vector<int>>TmpRoute(Task, vector<int>(1,-1));
 	vector<set<int> >stset(NODE,set<int>());
 	for(int i=0;i<num;i++)
+		{
 		stset[st[i]].insert(te[i]);
+		}
 	for (int i = 0; i <10000000; i++)
 	{
 		float ss=float(1000*clock())/ CLOCKS_PER_SEC;
@@ -170,23 +201,27 @@ vector<pair<string,float> > GraphPath::bellmanFordCuda(vector<service>&ser,ostre
 		stillS=0;
 		for(int k=0;k<NODE;k++)
 			if(!stset[k].empty())
+				{
 				mask[stillS++]=k;
+				stset[k].clear();
+				}
+		//if(stillS==0)break;
 		dim3 blocksq(stillS/threadsize + 1, NODE*stillS/stillS);
 		ChangePameterC << <blocksq, threadsize >> >(dev_p, dev_d, dev_st);
 		cudaMemcpy(dev_lambda, lambda, EDge*sizeof(float), cudaMemcpyHostToDevice);
 		cudaMemcpy(dev_mask, mask, stillS*sizeof(int), cudaMemcpyHostToDevice);
-		dim3 blocks_square(stillS / threadsize + 1, EDge*stillS /stillS);
+		dim3 blocks_square(stillS/threadsize + 1,EDge);
 		do{
 			cudaMemcpy(dev_m, &zeor, sizeof(int), cudaMemcpyHostToDevice);
-			bellmanHigh << <blocks_square, threadsize >> >(dev_edge, dev_m, dev_d, dev_p, dev_lambda, dev_mask, stillS);
+			bellmanHigh << <blocks_square, threadsize >> >(dev_edge, dev_m, dev_d, dev_p, dev_lambda, dev_mask,stillS);
 			cudaMemcpy(mark, dev_m, sizeof(int), cudaMemcpyDeviceToHost);
 		} while (*mark);
-		color << <blocks_square, threadsize >> >(dev_edge, dev_m, dev_d, dev_p, dev_lambda, dev_mask, stillS);
+		color << <blocks_square, threadsize >> >(dev_edge, dev_m, dev_d, dev_p, dev_lambda, dev_mask,stillS);
 		cudaMemcpy(pre, dev_p, sizeof(int)*NODE*NODE, cudaMemcpyDeviceToHost);
 		cudaMemcpy(d, dev_d, sizeof(float)*NODE*NODE, cudaMemcpyDeviceToHost);
 		float ee=float(1000*clock())/ CLOCKS_PER_SEC;
 		//cout<<"gpu time is "<<ee-ss<<endl;
-		int value = rearrange(&G, capacity, lambda, pre, d, pd, te, st, num, mum, bestadd, stillS, NODE,1,StoreRoute, BestRoute,TmpRoute,stset, bestroutes,totalflow,mind);
+		int value = rearrange(&G, capacity, lambda, pre, d, pd, te, st, num, mum, bestadd, stillS,NODE,1,StoreRoute, BestRoute,TmpRoute,stset, bestroutes,totalflow,mind);
 		float eee=float(1000*clock())/ CLOCKS_PER_SEC;
 		//cout<<"rearrange time is "<<eee-ee<<endl;
 		middata.push_back(value);

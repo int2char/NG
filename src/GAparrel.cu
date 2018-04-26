@@ -43,7 +43,7 @@ __global__ void RawChormes(int*chormes,int *pathnum,int*hops,unsigned int*seed,i
 	int choice=Curand(seed,taskid,array)%(pathnum[taskid]+1)-1;
 	int Cid=popid*Task+taskid;
 	chormes[Cid]=choice;
-	rawvalue[Cid]=demand[taskid]/pow(hops[taskid*ROD+choice],0.5);
+	rawvalue[Cid]=pow((float)demand[taskid],0.5)/hops[taskid*ROD+choice];
 	rawmark[Cid]=taskid;
 }
 __global__ void Cook(int*chormes,int*pathset,int pathd,float*popmcap,float*demand,int*rawmark){
