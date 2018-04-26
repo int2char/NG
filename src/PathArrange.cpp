@@ -156,7 +156,7 @@ bool cmpv(RouteMark a1, RouteMark a2){
 	float tflow = totalflow;
 	if (tflow<bestadd)
 	{
-		cout<<"( "<<tflow<<" )"<<endl;
+		//cout<<"( "<<tflow<<" )"<<endl;
 		bestadd = tflow;
 		cbbflow = bestadd;
 		bestroutes = Routes;
@@ -173,8 +173,8 @@ bool cmpv(RouteMark a1, RouteMark a2){
 			}
 		}
 	}
-	else
-		cout<<tflow<<endl;
+	//else
+		//cout<<tflow<<endl;
 	float au=float(1000*clock())/ CLOCKS_PER_SEC;
 	set<int>added;
 	for (int i = 0; i <remain.size(); i++)

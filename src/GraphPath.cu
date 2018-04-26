@@ -41,7 +41,7 @@ __global__ void bellmanHigh(Edge *edge, int *m, float *c, int*p, float*lambda, i
 	int head = edge[tid].head;
 	int tail = edge[tid].tail;
 	int biao = i+NODE*head;
-	float val = c[tail*NODE+i]+1 +lambda[tid];
+	float val = c[tail*NODE+i]+lambda[tid];
 	if (c[biao] >val){
 		*m = 1;
 		c[biao] = val;
@@ -56,7 +56,7 @@ __global__ void color(Edge *edge, int *m, float *c, int*p, float*lambda, int *ma
 	int head = edge[tid].head;
 	int tail = edge[tid].tail;
 	int biao = i+head*NODE;
-	float val = c[tail*NODE+i]+1+lambda[tid];
+	float val = c[tail*NODE+i]+lambda[tid];
 	if (c[biao]+0.1>val){
 		p[biao] = tid;
 	}
@@ -90,13 +90,22 @@ __global__ void color(Edge *edge, int *m, float *c, int*p, float*lambda, int *ma
                 p[biao] = tid;
         }
 }*/
-__global__ void ChangePameterC(int*p, float*d, int* st){
+/*__global__ void ChangePameterC(int*p, float*d, int* st,int *mask,int stillS){
 	int tid = blockIdx.y;
-	int i = threadIdx.x + blockDim.x*blockIdx.x;
-	if (i >= NODE || tid >= NODE)return;
+	int i = mask[threadIdx.x + blockDim.x*blockIdx.x];
+	if (i >= stillS)return;
 	int biao = tid*NODE + i;
 	d[biao] = (i == tid) ? 0.0 : 10000000000.0;
 	p[biao] = -1;
+}*/
+__global__ void ChangePameterC(int*p, float*d, int* st,int *mask,int stillS){
+        int tid = blockIdx.y;
+        int i = threadIdx.x + blockIdx.x*blockDim.x;
+        if (i >= stillS)return;
+        i = mask[i];
+        int biao = tid*NODE + i;
+        d[biao] = (i == tid) ? 0.0 : 10000000000.0;
+        p[biao] = -1;
 }
 void GraphPath::Copy2GPU(std::vector<service> &s){
 	for (int i = 0; i < Task; i++)
@@ -115,7 +124,7 @@ void GraphPath::Copy2GPU(std::vector<service> &s){
 	for(begin;begin<end;begin++)
 		mask[stillS++]=*begin;
 	for (int i = 0; i < EDge; i++)
-		lambda[i] = 0;
+		lambda[i] = 1;
 	cudaMemcpy(dev_st, st, Task*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_te, te, Task*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_lambda, lambda, EDge*sizeof(float), cudaMemcpyHostToDevice);
@@ -206,8 +215,8 @@ vector<pair<string,float> > GraphPath::bellmanFordCuda(vector<service>&ser,ostre
 				stset[k].clear();
 				}
 		//if(stillS==0)break;
-		dim3 blocksq(stillS/threadsize + 1, NODE*stillS/stillS);
-		ChangePameterC << <blocksq, threadsize >> >(dev_p, dev_d, dev_st);
+		dim3 blocksq(stillS/threadsize + 1, NODE);
+		ChangePameterC << <blocksq, threadsize >> >(dev_p, dev_d, dev_st,dev_mask,stillS);
 		cudaMemcpy(dev_lambda, lambda, EDge*sizeof(float), cudaMemcpyHostToDevice);
 		cudaMemcpy(dev_mask, mask, stillS*sizeof(int), cudaMemcpyHostToDevice);
 		dim3 blocks_square(stillS/threadsize + 1,EDge);
@@ -218,7 +227,7 @@ vector<pair<string,float> > GraphPath::bellmanFordCuda(vector<service>&ser,ostre
 		} while (*mark);
 		color << <blocks_square, threadsize >> >(dev_edge, dev_m, dev_d, dev_p, dev_lambda, dev_mask,stillS);
 		cudaMemcpy(pre, dev_p, sizeof(int)*NODE*NODE, cudaMemcpyDeviceToHost);
-		cudaMemcpy(d, dev_d, sizeof(float)*NODE*NODE, cudaMemcpyDeviceToHost);
+		//cudaMemcpy(d, dev_d, sizeof(float)*NODE*NODE, cudaMemcpyDeviceToHost);
 		float ee=float(1000*clock())/ CLOCKS_PER_SEC;
 		//cout<<"gpu time is "<<ee-ss<<endl;
 		int value = rearrange(&G, capacity, lambda, pre, d, pd, te, st, num, mum, bestadd, stillS,NODE,1,StoreRoute, BestRoute,TmpRoute,stset, bestroutes,totalflow,mind);
