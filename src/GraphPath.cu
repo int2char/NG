@@ -186,7 +186,7 @@ vector<pair<string,float> > GraphPath::bellmanFordCuda(vector<service>&ser,ostre
 		cudaMemcpy(d, dev_d, sizeof(float)*NODE*NODE, cudaMemcpyDeviceToHost);
 		float ee=float(1000*clock())/ CLOCKS_PER_SEC;
 		//cout<<"gpu time is "<<ee-ss<<endl;
-		int value = rearrange(&G, capacity, lambda, pre, d, pd, te, st, num, mum, bestadd, stillS, NODE, 1, StoreRoute, BestRoute,TmpRoute,stset,Out, bestroutes,totalflow,mind);
+		int value = rearrange(&G, capacity, lambda, pre, d, pd, te, st, num, mum, bestadd, stillS, NODE,1,StoreRoute, BestRoute,TmpRoute,stset, bestroutes,totalflow,mind);
 		float eee=float(1000*clock())/ CLOCKS_PER_SEC;
 		//cout<<"rearrange time is "<<eee-ee<<endl;
 		middata.push_back(value);

@@ -50,12 +50,10 @@ bool cmpv(RouteMark a1, RouteMark a2){
 		return true;
 	return false;
 }
-float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, float *pd, int *te, int *st, int num, int mum, double& bestadd, int&stillS, int wide, int len, vector<vector<int>>&StoreRoute, vector<vector<int>>&BestRoute,vector<vector<int>>&TmpRoute,vector<set<int> >&stpair, ostream& Out, vector<RouteMark>& bestroutes, double totalflow,vector<vector<int>>&mind)
+ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, float *pd, int *te, int *st, int & num, int & mum, double& bestadd, int&stillS, int wide, int len, vector<vector<int>>&StoreRoute, vector<vector<int>>&BestRoute,vector<vector<int>>&TmpRoute,vector<set<int> >&stpair, vector<RouteMark>& bestroutes, double&totalflow,vector<vector<int>>&mind)
 {
-	//float stt=float(1000*clock())/ CLOCKS_PER_SEC;
 	totalflow=0;
 	vector<RouteMark> Routes;
-	vector<vector<int>>haslink(mum,vector<int>());
 	for (int i = 0; i < mum; i++)
 		capacity[i] = G->incL[i].capacity;
 	vector<int> remain;
@@ -65,12 +63,17 @@ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, flo
 		int f = pre[te[i] * wide + st[i]*len];
 		if (StoreRoute[i][0] < 0)
 		{
+			StoreRoute[i].clear();
+			StoreRoute[i].push_back(-2);
 			while (f >= 0){
+				StoreRoute[i].push_back(f);
 				n++;
 				f = pre[G->incL[f].tail*wide + st[i]*len];
 				if (n>1000)
 					cout << "circle"<<i<< endl;
 			}
+			StoreRoute[i].push_back(-1);
+			StoreRoute[i][0]=n;
 		}
 		else
 			n = StoreRoute[i][0];
@@ -78,142 +81,77 @@ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, flo
 		Routes.push_back(RouteMark(value, i));
 	}
 	sort(Routes.begin(), Routes.end(), cmpv);
-	//float as=float(1000*clock())/ CLOCKS_PER_SEC;
-	//cout<<"after as "<<as-stt<<endl;
 	for (int ai = 0; ai <Routes.size(); ai++)
 	{
 		int i = Routes[ai].mark;
 		float demand = pd[i];
 		int f = pre[te[i] * wide + st[i]*len];
 		int n = 0;
-		int flag = 0;
-		if (StoreRoute[i][0] < 0)
+		int flag = 0;	
+		int j = 0;
+		while (true)
 		{
-			StoreRoute[i].clear();
-			StoreRoute[i].push_back(-2);
-			while (f >= 0)
-			{
-				StoreRoute[i].push_back(f);
-				haslink[f].push_back(i);
-				if (capacity[f] < demand)
-				{
-					flag = 1;
-					//break;
-				}
-				if (n > 1000)
-				{
-					printf("circle!!!in s:%d:\n", i);
-				}
-				f = pre[G->incL[f].tail*wide + st[i]*len];
-				n++;
-			}
-			StoreRoute[i].push_back(-1);
-			if(n>=INFHOPS)
-				flag=1;
-			if (flag == 0)
-			{
-				StoreRoute[i][0]=n;
-				int j = 0;
-				totalflow += demand*n;
-				int f = pre[te[i] * wide + st[i]*len];
-				while (f >= 0)
-				{
-					j++;
-					capacity[f]-=demand;
-					//haslink[f].push_back(i);
-					f = pre[G->incL[f].tail*wide + st[i]*len];
-					if (n > 10100)
-						printf("erro2\n");
-				}
-			}
-			else
-			{
-				totalflow+=demand*INFHOPS;
-				remain.push_back(i);
-			}
+			j++;
+			int edn = StoreRoute[i][j];
+			if (edn < 0)
+				break;
+			if (capacity[edn] < demand)
+				flag = 1;
 		}
-		else
+		if(j-1>=INFHOPS)
+			flag=1;
+		if (flag == 0)
 		{
-			int j = 0;
+			j = 0;
 			while (true)
 			{
 				j++;
 				int edn = StoreRoute[i][j];
 				if (edn < 0)
 					break;
-				haslink[edn].push_back(i);
-				if (capacity[edn] < demand)
-				{
-					flag = 1;
-					//break;
-				}
+				capacity[edn] -= demand;
 			}
-			if(j-1>=INFHOPS)
-				flag=1;
-			if (flag == 0)
-			{
-				j = 0;
-				while (true)
-				{
-					j++;
-					int edn = StoreRoute[i][j];
-					if (edn < 0)
-						break;
-					//haslink[edn].push_back(i);
-					capacity[edn] -= demand;
-				}
-				totalflow += demand*(j-1);
-			}
-			else
-			{
-				StoreRoute[i][0]=-2;
-				totalflow+=demand*INFHOPS;
-				remain.push_back(i);
-			}
+			totalflow += demand*(j-1);
+		}
+		else
+		{
+			totalflow+=demand*INFHOPS;
+			remain.push_back(i);
 		}
 	}
-	float aadd=float(1000*clock())/ CLOCKS_PER_SEC;
-	//cout<<"after add "<<aadd-as<<endl;
 	float *bca =new float[mum];
 	for(int i=0;i<mum;i++)
 		bca[i]=capacity[i];
 	TmpRoute=StoreRoute;
-	if (BON>0)
-	{
-		int ren = remain.size();
-		vector<int> stillremain;
-		for (int i = 0; i < ren; i++){
-			float demand = pd[remain[i]];
-			int hops=StoreRoute[remain[i]].size()-2;
-			BFSO(G, st[remain[i]], te[remain[i]], dist, peg,demand,bca,hops,mind);
-			int f = peg[te[remain[i]]];
-			if (dist[te[remain[i]]]<INFHOPS)
+	for (int i = 0; i < remain.size();i++){
+		float demand = pd[remain[i]];
+		int hops=StoreRoute[remain[i]].size()-2;
+		BFSO(G, st[remain[i]], te[remain[i]], dist, peg,demand,bca,hops,mind);
+		int f = peg[te[remain[i]]];
+		if (dist[te[remain[i]]]<INFHOPS)
+		{
+			TmpRoute[remain[i]].clear();
+			TmpRoute[remain[i]].push_back(dist[te[remain[i]]]);
+			int j = 0;
+			while (f >= 0)
 			{
-				TmpRoute[remain[i]].clear();
-				TmpRoute[remain[i]].push_back(dist[te[remain[i]]]);
-				int j = 0;
-				while (f >= 0)
-				{
 
-					if (bca[f] < demand)
-						printf("erro!\n");
-					bca[f] -= demand;
-					TmpRoute[remain[i]].push_back(f);
-					haslink[f].push_back(remain[i]);
-					f = peg[G->incL[f].tail];
-					j++;
-				}
-				TmpRoute[remain[i]].push_back(-1);
-				totalflow += demand*(j-INFHOPS);
+				if (bca[f] < demand)
+					printf("erro!\n");
+				bca[f] -= demand;
+				TmpRoute[remain[i]].push_back(f);
+				f = peg[G->incL[f].tail];
+				j++;
 			}
-			else
-			{
-				stillremain.push_back(remain[i]);
-				TmpRoute[remain[i]].clear();
-				TmpRoute[remain[i]].push_back(-1);
-			}
-
+			TmpRoute[remain[i]].push_back(-1);
+			totalflow += demand*(j-INFHOPS);
 		}
+		else
+		{
+			TmpRoute[remain[i]].clear();
+			TmpRoute[remain[i]].push_back(-1);
+		}
+
 	}
 	float tflow = totalflow;
 	if (tflow<bestadd)
@@ -238,13 +176,10 @@ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, flo
 	else
 		cout<<tflow<<endl;
 	float au=float(1000*clock())/ CLOCKS_PER_SEC;
-	//cout<<"after bfs "<<au-aadd<<endl;
-	stillS = remain.size();
-	int maskC = 0;
-	set<int>remainset;
 	set<int>added;
-	for (int i = 0; i < stillS; i++)
+	for (int i = 0; i <remain.size(); i++)
 	{
+		StoreRoute[remain[i]][0]=-1;
 		float demand = pd[remain[i]];
 		int j = 0;
 		int cc=0;
@@ -259,7 +194,6 @@ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, flo
 				{
 					vedge.push_back(edn);
 					stpair[st[remain[i]]].insert(te[remain[i]]);
-					maskC++;
 				}
 		}
 		int gg=rand()%vedge.size();
@@ -281,9 +215,7 @@ float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, flo
 			}
 		}
 	}
-	//float am=float(1000*clock())/ CLOCKS_PER_SEC;
-	//cout<<"after lamnda add "<<am-au<<endl;
-	stillS = maskC;
+	stillS = remain.size();
 	return tflow;
 }
 /*float  rearrange(Graph* G, float *capacity, float *lambda, int*pre, float*d, float *pd, int *te, int *st, int num, int mum, double& bestadd, int&stillS, int wide, int len, vector<vector<int>>&StoreRoute, vector<vector<int>>&BestRoute,vector<vector<int>>&TmpRoute,vector<set<int> >&stpair, ostream& Out, vector<RouteMark>& bestroutes, double totalflow)

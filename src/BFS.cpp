@@ -50,8 +50,8 @@ void BFSO(Graph *G, int s, int t,float d[], int peg[], float demand, float capac
         do{
                 cur=que.front();
                 que.pop();
-                if(mind[cur][t]+d[cur]>2*rv)continue;
-                if (cur==t||d[cur]>=2*rv)break;
+                if(mind[cur][t]+d[cur]>rv)continue;
+                if (cur==t||d[cur]>=rv)break;
                 int size = G->near[cur].size();
                 for (int i= size-1; i>=0; i--)
                 {

@@ -27,13 +27,10 @@ void dijkstra(Graph *G, int s, set<int> t,int size,float d[],int peg[],float lam
 		flag[i] = 0;
 		peg[i] = -1;
 	}
-	//priority_queue<pair<int,int>,vector<pair<int,int>>,mmp>heap;
 	Heap heap(n_num);
 	for (int i = 0; i < n_num; i++)
 		heap.push(i, d[i]);
-	//heap.push(make_pair(s,0));
 	do{
-		//int cur=heap.top().first;
 		int cur=heap.pop(); 
 		if(flag[cur]==1)continue;
 		flag[cur] = 1;
@@ -51,7 +48,6 @@ void dijkstra(Graph *G, int s, set<int> t,int size,float d[],int peg[],float lam
 				if (flag[e->head] == 0 && d[e->head]>(d[e->tail] +e->weight+lambda[id])){
 					d[e->head] = d[e->tail] + e->weight+lambda[id];
 					heap.update(e->head, d[e->head]);
-					//heap.push(make_pair(e->head, d[e->head]));
 					peg[e->head] = id;
 				
 			}
