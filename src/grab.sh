@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bashi
 rm -f ./data/*.txt
 nodes=(1000)
 types=(0 2)
@@ -18,13 +18,13 @@ do
       task=$[$power*$node]
       biao=$type
       rm -f *.out
-      nvcc -O3 -std=c++11 *.cpp *.cu --gpu-architecture=compute_35 --gpu-code=sm_35 -I ../include -I ../cplex_include -L ../lib -lconcert -lcplex -lilocplex -lm -lpthread -DIL_STD -DNODE=$node -DEDge=$edge -DTask=$task -DTYPE="\"${graphtype[$biao]}\"" -DINPUTFILE=\"$path\" -DGANOEX=1 
+      nvcc -O3 -std=c++11 *.cpp *.cu --gpu-architecture=compute_35 --gpu-code=sm_35 -I ../include -I ../cplex_include -L ../lib -lconcert -lcplex -lilocplex -lm -lpthread -DIL_STD -DNODE=$node -DEDge=$edge -DTask=$task -DTYPE="\"${graphtype[$biao]}\"" -DINPUTFILE=\"$path\" -DGANOEX=1 2>>./data/compile.txt
      CUDA_VISIBLE_DEVICES=1 ./a.out L S 1>>./data/runinfo.txt 2>>./data/err.txt
       if [[ $power -eq 6 ]];then
       for capacity in ${capacitys[@]}
        do
           rm -f *.out
-          nvcc -O3 -std=c++11 *.cpp *.cu --gpu-architecture=compute_35 --gpu-code=sm_35 -I ../include -I ../cplex_include -L ../lib -lconcert -lcplex -lilocplex -lm -lpthread -DIL_STD -DNODE=$node -DEDge=$edge -DTask=$task -DTYPE="\"${graphtype[$biao]}\"" -DINPUTFILE=\"$path\" -DGANOEX=1 -DCAPACITY=$capacity #2>>./data/complie.txt
+          nvcc -O3 -std=c++11 *.cpp *.cu --gpu-architecture=compute_35 --gpu-code=sm_35 -I ../include -I ../cplex_include -L ../lib -lconcert -lcplex -lilocplex -lm -lpthread -DIL_STD -DNODE=$node -DEDge=$edge -DTask=$task -DTYPE="\"${graphtype[$biao]}\"" -DINPUTFILE=\"$path\" -DGANOEX=1 -DCAPACITY=$capacity 2>>./data/complie.txt
     	 CUDA_VISIBLE_DEVICES=0 ./a.out L S #1>>./data/info.txt 2>>./data/err.txt
         done
       fi

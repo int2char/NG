@@ -37,8 +37,7 @@ void dijkstra(Graph *G, int s, set<int> t,int size,float d[],int peg[],float lam
 		if (t.find(cur) != t.end())
 			{
 				size--;
-				if(size==0)
-					break;
+				if(size==0)break;
 			}
 		int size = G->near[cur].size();
 		for (int i = 0; i<size; i++){
@@ -53,6 +52,7 @@ void dijkstra(Graph *G, int s, set<int> t,int size,float d[],int peg[],float lam
 			}
 		}
 	} while (!heap.empty());
+	//if(heap.empty()&&size!=0)cout<<" erro"<<endl;
 	
 }
 void dijcapacity(Graph *G, int s, int t, float d[], int peg[], float lambda[], float capacity[], float demand)
